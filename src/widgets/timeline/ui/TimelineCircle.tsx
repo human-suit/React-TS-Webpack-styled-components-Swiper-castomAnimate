@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 interface TimelineCircleProps {
@@ -39,10 +39,40 @@ export const TimelineCircle: React.FC<TimelineCircleProps> = ({
   color = "#3877EE",
   values,
 }) => {
+  const [display, setDisplay] = useState<[number, number]>(values);
+  const prevValues = useRef<[number, number]>(values);
+
+  useEffect(() => {
+    const start = prevValues.current;
+    const end = values;
+
+    const duration = 600; // ms
+    const startTime = performance.now();
+
+    const animate = (time: number) => {
+      const progress = Math.min((time - startTime) / duration, 1);
+
+      const current: [number, number] = [
+        Math.round(start[0] + (end[0] - start[0]) * progress),
+        Math.round(start[1] + (end[1] - start[1]) * progress),
+      ];
+
+      setDisplay(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        prevValues.current = end;
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [values]);
+
   return (
     <Circle size={size} color={color}>
-      <First>{values[0]}</First>
-      <Second>{values[1]}</Second>
+      <First>{display[0]}</First>
+      <Second>{display[1]}</Second>
     </Circle>
   );
 };

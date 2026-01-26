@@ -27,6 +27,7 @@ const Container = styled.div`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
+  position: relative; /* для абсолютного позиционирования линий внутри */
 `;
 
 const Header = styled.div`
@@ -42,6 +43,7 @@ const Header = styled.div`
   h1 {
     line-height: 1.2;
   }
+
   .title-main {
     display: block;
   }
@@ -71,7 +73,7 @@ const Liner = styled.div`
 `;
 
 const Section = styled.div`
-  margin-top: -150px;
+  margin-top: -120px;
   display: flex;
   justify-content: center;
   position: relative;
@@ -91,48 +93,112 @@ const Controls = styled.div`
 `;
 
 const StepCounter = styled.div`
-  font-size: 18px;
+  font-size: 16px;
   color: #42567a;
   font-weight: bold;
   margin: 20px 0px -10px 65px;
 `;
 
-const Button = styled.button`
-  font-size: 18px;
-  color: #42567a;
+const SliderFade = styled.div<{ $visible: boolean }>`
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  transition: opacity 0.3s ease;
+`;
+
+const ArrowButton = styled.button<{ $left?: boolean; $disabled?: boolean }>`
+  font-size: 0;
   background: #e5e5e5;
   width: 50px;
   height: 50px;
   border: 1px solid #42567a;
   border-radius: 50%;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease;
 
-  &:disabled {
-    background: #eee;
-    cursor: not-allowed;
+  svg {
+    width: 30px;
+    height: 30px;
+    fill: ${({ $disabled }) => ($disabled ? "#42567A" : "#42567a")};
+    transform: ${({ $left }) => ($left ? "rotate(180deg)" : "none")};
+    transition: fill 0.2s ease;
+  }
+
+  &:hover svg {
+    fill: ${({ $disabled }) => ($disabled ? "#42567A" : "#3877ee")};
   }
 `;
 
+// Вертикальная линия по центру контейнера
+const VerticalLine = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background-color: rgba(66, 86, 122, 0.2);
+  transform: translateX(-50%); /* точно по центру */
+`;
+
+// Горизонтальная линия по центру контейнера
+const HorizontalLine = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 41.3%;
+  height: 1px;
+  background-color: rgba(66, 86, 122, 0.2);
+  transform: translateY(-50%);
+`;
 const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [tooltipVisible, setTooltipVisible] = useState<number | null>(0);
+  const [sliderVisible, setSliderVisible] = useState(true);
   const sliderRef = useRef<SimpleSliderRef>(null);
 
+  // Ref для хранения таймера fade
+  const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Плавная смена шага с fade
+  const changeStep = (nextStep: number) => {
+    // отменяем предыдущий таймер, если кликнули быстро
+    if (fadeTimeout.current) {
+      clearTimeout(fadeTimeout.current);
+    }
+
+    setSliderVisible(false);
+    setTooltipVisible(null);
+
+    fadeTimeout.current = setTimeout(() => {
+      setCurrentStep(nextStep);
+      sliderRef.current?.slideTo(0);
+      setSliderVisible(true);
+
+      setTimeout(() => setTooltipVisible(nextStep), 400);
+      fadeTimeout.current = null;
+    }, 300);
+  };
+
   const handlePrev = () => {
-    const newStep = currentStep === 0 ? steps.length - 1 : currentStep - 1;
-    setCurrentStep(newStep);
-    sliderRef.current?.slideTo(0);
+    if (currentStep === 0) return;
+    changeStep(currentStep - 1);
   };
 
   const handleNext = () => {
-    const newStep = currentStep === steps.length - 1 ? 0 : currentStep + 1;
-    setCurrentStep(newStep);
-    sliderRef.current?.slideTo(0);
+    if (currentStep === steps.length - 1) return;
+    changeStep(currentStep + 1);
   };
 
   return (
     <>
       <GlobalStyle />
       <Container>
+        <VerticalLine />
+        <HorizontalLine />
         <Header>
           <Liner />
           <h1>
@@ -153,10 +219,9 @@ const App = () => {
               steps={steps}
               circleSize={500}
               activeIndex={currentStep}
-              onPointClick={(index) => {
-                setCurrentStep(index);
-                sliderRef.current?.slideTo(0);
-              }}
+              tooltipVisible={tooltipVisible}
+              setTooltipVisible={setTooltipVisible}
+              onPointClick={changeStep}
             />
           </CircleWrapper>
         </Section>
@@ -167,19 +232,33 @@ const App = () => {
         </StepCounter>
 
         <Controls>
-          <Button onClick={handlePrev}>&lt;</Button>
-          <Button onClick={handleNext}>&gt;</Button>
+          <ArrowButton $left $disabled={currentStep === 0} onClick={handlePrev}>
+            <svg viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+            </svg>
+          </ArrowButton>
+
+          <ArrowButton
+            $disabled={currentStep === steps.length - 1}
+            onClick={handleNext}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+            </svg>
+          </ArrowButton>
         </Controls>
 
-        <SimpleSlider
-          ref={sliderRef}
-          slides={steps[currentStep].facts.map((f) => ({
-            title: `${f.year}`,
-            description: f.description,
-          }))}
-          currentStep={0}
-          onSlideChange={() => {}}
-        />
+        <SliderFade $visible={sliderVisible}>
+          <SimpleSlider
+            ref={sliderRef}
+            slides={steps[currentStep].facts.map((f) => ({
+              title: `${f.year}`,
+              description: f.description,
+            }))}
+            currentStep={0}
+            onSlideChange={() => {}}
+          />
+        </SliderFade>
       </Container>
     </>
   );

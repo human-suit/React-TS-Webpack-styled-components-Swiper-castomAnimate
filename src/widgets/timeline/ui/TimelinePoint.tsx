@@ -27,15 +27,15 @@ const PointWrapper = styled.div<{ x: number; y: number }>`
 `;
 
 const PointDot = styled.div<{ $active: boolean; $hover: boolean }>`
-  width: ${({ $active, $hover }) => ($active || $hover ? "32px" : "10px")};
-  height: ${({ $active, $hover }) => ($active || $hover ? "32px" : "10px")};
+  width: ${({ $active, $hover }) => ($active || $hover ? "42px" : "10px")};
+  height: ${({ $active, $hover }) => ($active || $hover ? "42px" : "10px")};
   border-radius: 50%;
   background: ${({ $active, $hover }) =>
-    $active ? "#3877EE" : $hover ? "#ef5da8" : "#ccc"};
+    $active ? "#F4F5F9" : $hover ? "#F4F5F9" : "#ccc"};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: #42567a;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
