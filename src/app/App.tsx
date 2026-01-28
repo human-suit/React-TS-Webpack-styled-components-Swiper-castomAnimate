@@ -1,12 +1,12 @@
 import React, { useState, useRef } from "react";
 import styled, { createGlobalStyle } from "styled-components";
-import { TimelineCircle } from "../widgets/timeline/ui/TimelineCircle";
-import { TimelinePoints } from "../widgets/timeline/ui/TimelinePoints";
-import { steps } from "../widgets/timeline/data/steps";
 import {
+  TimelineCircle,
+  TimelinePoints,
   SimpleSlider,
   SimpleSliderRef,
-} from "../widgets/timeline/ui/TimelineSlider";
+} from "../widgets/timeline/ui";
+import { steps } from "../widgets/timeline/data/steps";
 
 const GlobalStyle = createGlobalStyle`
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -27,14 +27,20 @@ const Container = styled.div`
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  position: relative; /* для абсолютного позиционирования линий внутри */
+  position: relative;
+  overflow-x: hidden;
+
+  @media (max-width: 400px) {
+    max-width: none;
+    padding: 10vh 16px 0;
+    overflow: hidden;
+  }
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
-  flex-direction: column;
-  text-align: center;
+  gap: 78px;
   color: #42567a;
   font-weight: bold;
   font-size: 26px;
@@ -44,20 +50,25 @@ const Header = styled.div`
     line-height: 1.2;
   }
 
-  .title-main {
-    display: block;
-  }
+  .title-main,
   .title-sub {
     display: block;
-    position: relative;
-    left: 0;
   }
 
-  @media (min-width: 768px) {
-    flex-direction: row;
-    gap: 60px;
+  @media (max-width: 400px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding-bottom: 30px;
+
+    h1 {
+      text-align: left;
+    }
+
+    .title-main,
     .title-sub {
-      left: -100px;
+      font-size: 32px;
+      position: static;
     }
   }
 `;
@@ -67,8 +78,9 @@ const Liner = styled.div`
   height: 15vh;
   background: linear-gradient(to bottom, #3877ee 0%, #ef5da8 100%);
   border-radius: 999px;
-  @media (min-width: 768px) {
-    height: 150px;
+
+  @media (max-width: 400px) {
+    display: none;
   }
 `;
 
@@ -77,19 +89,23 @@ const Section = styled.div`
   display: flex;
   justify-content: center;
   position: relative;
+
+  @media (max-width: 400px) {
+    margin-top: 0;
+    padding: 0 16px;
+  }
 `;
 
 const CircleWrapper = styled.div<{ size: number }>`
   position: relative;
   width: ${({ size }) => size}px;
   height: ${({ size }) => size}px;
-`;
 
-const Controls = styled.div`
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  margin: 20px 0px 20px 60px;
+  @media (max-width: 400px) {
+    width: 280px;
+    height: 230px;
+    margin: 0 auto;
+  }
 `;
 
 const StepCounter = styled.div`
@@ -97,15 +113,40 @@ const StepCounter = styled.div`
   color: #42567a;
   font-weight: bold;
   margin: 20px 0px -10px 65px;
+  order: 4;
+
+  @media (max-width: 400px) {
+    font-size: 18px;
+    margin: 16px 0 -4px;
+    order: 5;
+  }
+`;
+
+const Controls = styled.div`
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin: 20px 0px 20px 60px;
+  order: 5;
+
+  @media (max-width: 400px) {
+    margin: 16px 0;
+    gap: 10px;
+    order: 6;
+  }
 `;
 
 const SliderFade = styled.div<{ $visible: boolean }>`
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   transition: opacity 0.3s ease;
+  order: 6;
+
+  @media (max-width: 400px) {
+    order: 4;
+  }
 `;
 
 const ArrowButton = styled.button<{ $left?: boolean; $disabled?: boolean }>`
-  font-size: 0;
   background: #e5e5e5;
   width: 50px;
   height: 50px;
@@ -116,24 +157,19 @@ const ArrowButton = styled.button<{ $left?: boolean; $disabled?: boolean }>`
   align-items: center;
   justify-content: center;
   opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
-  transition:
-    opacity 0.2s ease,
-    border-color 0.2s ease;
 
   svg {
     width: 30px;
     height: 30px;
-    fill: ${({ $disabled }) => ($disabled ? "#42567A" : "#42567a")};
+    fill: #42567a;
     transform: ${({ $left }) => ($left ? "rotate(180deg)" : "none")};
-    transition: fill 0.2s ease;
   }
-
-  &:hover svg {
-    fill: ${({ $disabled }) => ($disabled ? "#42567A" : "#3877ee")};
+  @media (max-width: 400px) {
+    width: 40px;
+    height: 40px;
   }
 `;
 
-// Вертикальная линия по центру контейнера
 const VerticalLine = styled.div`
   position: absolute;
   top: 0;
@@ -141,34 +177,35 @@ const VerticalLine = styled.div`
   left: 50%;
   width: 1px;
   background-color: rgba(66, 86, 122, 0.2);
-  transform: translateX(-50%); /* точно по центру */
+  transform: translateX(-50%);
+
+  @media (max-width: 400px) {
+    display: none;
+  }
 `;
 
-// Горизонтальная линия по центру контейнера
 const HorizontalLine = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  top: 41.3%;
+  top: 43.3%;
   height: 1px;
   background-color: rgba(66, 86, 122, 0.2);
-  transform: translateY(-50%);
+
+  @media (max-width: 400px) {
+    display: none;
+  }
 `;
+
 const App = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [tooltipVisible, setTooltipVisible] = useState<number | null>(0);
   const [sliderVisible, setSliderVisible] = useState(true);
   const sliderRef = useRef<SimpleSliderRef>(null);
-
-  // Ref для хранения таймера fade
   const fadeTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Плавная смена шага с fade
   const changeStep = (nextStep: number) => {
-    // отменяем предыдущий таймер, если кликнули быстро
-    if (fadeTimeout.current) {
-      clearTimeout(fadeTimeout.current);
-    }
+    if (fadeTimeout.current) clearTimeout(fadeTimeout.current);
 
     setSliderVisible(false);
     setTooltipVisible(null);
@@ -177,20 +214,9 @@ const App = () => {
       setCurrentStep(nextStep);
       sliderRef.current?.slideTo(0);
       setSliderVisible(true);
-
       setTimeout(() => setTooltipVisible(nextStep), 400);
       fadeTimeout.current = null;
     }, 300);
-  };
-
-  const handlePrev = () => {
-    if (currentStep === 0) return;
-    changeStep(currentStep - 1);
-  };
-
-  const handleNext = () => {
-    if (currentStep === steps.length - 1) return;
-    changeStep(currentStep + 1);
   };
 
   return (
@@ -199,6 +225,7 @@ const App = () => {
       <Container>
         <VerticalLine />
         <HorizontalLine />
+
         <Header>
           <Liner />
           <h1>
@@ -211,10 +238,9 @@ const App = () => {
           <CircleWrapper size={500}>
             <TimelineCircle
               size={500}
-              color="#3877EE"
+              color="#42567A"
               values={steps[currentStep].years}
             />
-
             <TimelinePoints
               steps={steps}
               circleSize={500}
@@ -231,23 +257,6 @@ const App = () => {
           {String(steps.length).padStart(2, "0")}
         </StepCounter>
 
-        <Controls>
-          <ArrowButton $left $disabled={currentStep === 0} onClick={handlePrev}>
-            <svg viewBox="0 0 24 24">
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
-            </svg>
-          </ArrowButton>
-
-          <ArrowButton
-            $disabled={currentStep === steps.length - 1}
-            onClick={handleNext}
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
-            </svg>
-          </ArrowButton>
-        </Controls>
-
         <SliderFade $visible={sliderVisible}>
           <SimpleSlider
             ref={sliderRef}
@@ -259,6 +268,31 @@ const App = () => {
             onSlideChange={() => {}}
           />
         </SliderFade>
+
+        <Controls>
+          <ArrowButton
+            $left
+            $disabled={currentStep === 0}
+            onClick={() => {
+              if (currentStep > 0) changeStep(currentStep - 1);
+            }}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+            </svg>
+          </ArrowButton>
+
+          <ArrowButton
+            $disabled={currentStep === steps.length - 1}
+            onClick={() => {
+              if (currentStep < steps.length - 1) changeStep(currentStep + 1);
+            }}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+            </svg>
+          </ArrowButton>
+        </Controls>
       </Container>
     </>
   );

@@ -7,19 +7,78 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
 import "swiper/css";
+import "swiper/css/pagination";
 
 const SliderOuterWrapper = styled.div`
   position: relative;
   width: 1050px;
   margin-left: 60px;
+
+  .swiper-pagination {
+    display: none;
+  }
+
+  @media (max-width: 400px) {
+    width: 100%;
+    margin-left: 20px;
+
+    .swiper {
+      margin-left: -170px;
+      overflow: visible;
+    }
+
+    .top-line {
+      width: 100%;
+      height: 1px;
+      background-color: #c7cdd9;
+      margin: 0px 10px 10px -20px;
+    }
+
+    .swiper-pagination {
+      display: flex;
+      justify-content: center;
+      position: absolute;
+      margin: 0px 0px -90px 80px;
+      bottom: -12px;
+
+      .swiper-pagination-bullet {
+        background: #42567a;
+        opacity: 0.3;
+      }
+
+      .swiper-pagination-bullet-active {
+        opacity: 1;
+      }
+    }
+
+    .swiper-slide {
+      opacity: 0.35;
+      transition:
+        opacity 0.3s ease,
+        transform 0.3s ease;
+    }
+
+    .swiper-slide-active {
+      opacity: 1;
+    }
+
+    .swiper-slide-next {
+      opacity: 0.4;
+    }
+  }
 `;
 
 const SliderWrapper = styled.div<{ $visible: boolean }>`
-  height: 220px;
-  overflow: visible;
+  height: 100px;
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   transition: opacity 0.4s ease;
+  overflow: visible;
+
+  @media (max-width: 400px) {
+    height: 160px;
+  }
 `;
 
 const SlideContent = styled.div`
@@ -28,46 +87,58 @@ const SlideContent = styled.div`
   height: 110px;
   border-radius: 12px;
   padding: 15px;
-  text-align: left;
   box-sizing: border-box;
 `;
 
 const SlideTitle = styled.h3`
-  margin: 0 0 10px 0;
+  margin: 0 0 10px;
   color: #3877ee;
   font-size: 20px;
-  line-height: 1.2;
+
+  @media (max-width: 400px) {
+    font-size: 16px;
+  }
 `;
 
 const SlideDescription = styled.p`
   margin: 0;
   color: #42567a;
   font-size: 16px;
-  line-height: 1.4;
+
+  @media (max-width: 400px) {
+    font-size: 14px;
+  }
 `;
 
 const NavButton = styled.div<{ $hidden: boolean; $left?: boolean }>`
   position: absolute;
   top: 30px;
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   background: #fff;
   border-radius: 50%;
-  color: #3877ee;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 20px;
-  font-weight: bold;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
   opacity: ${({ $hidden }) => ($hidden ? 0 : 1)};
   pointer-events: ${({ $hidden }) => ($hidden ? "none" : "auto")};
-  transition: opacity 0.3s ease;
 
-  ${({ $left }) => ($left ? "left: -50px;" : "right: -100px;")}
+  ${({ $left }) => ($left ? "left: -35px;" : "right: -70px;")}
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: #3877ee;
+    transform: ${({ $left }) => ($left ? "rotate(180deg)" : "none")};
+  }
+
+  @media (max-width: 400px) {
+    display: none;
+  }
 `;
 
 export interface SimpleSliderRef {
@@ -78,7 +149,7 @@ export interface SimpleSliderRef {
 
 export interface SimpleSliderProps {
   slides: { title: string; description: string }[];
-  currentStep: number; // шаг, который меняется извне
+  currentStep: number;
   onSlideChange: (index: number) => void;
 }
 
@@ -87,30 +158,33 @@ export const SimpleSlider = forwardRef<SimpleSliderRef, SimpleSliderProps>(
     const swiperRef = useRef<any>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const [visible, setVisible] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
 
-    const containerWidth = 1050;
-    const slideWidth = 300;
     const spaceBetween = 20;
-    const visibleSlides = Math.floor(
-      containerWidth / (slideWidth + spaceBetween),
-    );
+    const visibleSlides = 3;
+    const mobileSlideWidth = 250;
+
+    useEffect(() => {
+      const updateWidth = () => setIsMobile(window.innerWidth <= 400);
+      updateWidth();
+      window.addEventListener("resize", updateWidth);
+      return () => window.removeEventListener("resize", updateWidth);
+    }, []);
 
     useImperativeHandle(ref, () => ({
-      slideTo: (index: number) => swiperRef.current?.slideTo(index),
+      slideTo: (index) => swiperRef.current?.slideTo(index),
       slideNext: () => swiperRef.current?.slideNext(),
       slidePrev: () => swiperRef.current?.slidePrev(),
     }));
 
-    // При смене currentStep делаем fade
     useEffect(() => {
-      setVisible(false); // скрываем слайдер
-      const timeout = setTimeout(() => {
-        setActiveIndex(0); // сбрасываем активный слайд при новом step
+      setVisible(false);
+      const t = setTimeout(() => {
+        setActiveIndex(0);
         swiperRef.current?.slideTo(0);
-        setVisible(true); // показываем слайдер снова
-      }, 300); // длительность fade
-
-      return () => clearTimeout(timeout);
+        setVisible(true);
+      }, 300);
+      return () => clearTimeout(t);
     }, [currentStep]);
 
     const handleSlideChange = (index: number) => {
@@ -120,19 +194,24 @@ export const SimpleSlider = forwardRef<SimpleSliderRef, SimpleSliderProps>(
 
     return (
       <SliderOuterWrapper>
+        {isMobile && <div className="top-line" />}
         <SliderWrapper $visible={visible}>
           <Swiper
+            modules={[Pagination]}
             onSwiper={(swiper) => (swiperRef.current = swiper)}
             onSlideChange={(swiper) => handleSlideChange(swiper.activeIndex)}
-            slidesPerView="auto"
+            slidesPerView={isMobile ? "auto" : 3}
             spaceBetween={spaceBetween}
+            pagination={{ clickable: true }}
+            centeredSlides={isMobile}
+            slidesPerGroup={1}
+            initialSlide={0}
           >
             {slides.map((slide, index) => (
               <SwiperSlide
                 key={index}
                 style={{
-                  width: slideWidth,
-                  boxSizing: "border-box",
+                  width: isMobile ? mobileSlideWidth : 300,
                   display: "flex",
                 }}
               >
@@ -148,19 +227,20 @@ export const SimpleSlider = forwardRef<SimpleSliderRef, SimpleSliderProps>(
         <NavButton
           $left
           $hidden={activeIndex === 0}
-          onClick={() => activeIndex > 0 && swiperRef.current?.slidePrev()}
+          onClick={() => swiperRef.current?.slidePrev()}
         >
-          &lt;
+          <svg viewBox="0 0 24 24">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+          </svg>
         </NavButton>
 
         <NavButton
           $hidden={activeIndex + visibleSlides >= slides.length}
-          onClick={() =>
-            activeIndex + visibleSlides < slides.length &&
-            swiperRef.current?.slideNext()
-          }
+          onClick={() => swiperRef.current?.slideNext()}
         >
-          &gt;
+          <svg viewBox="0 0 24 24">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+          </svg>
         </NavButton>
       </SliderOuterWrapper>
     );

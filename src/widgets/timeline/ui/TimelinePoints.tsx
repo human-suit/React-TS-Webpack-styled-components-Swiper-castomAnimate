@@ -16,6 +16,9 @@ const Circle = styled.div<{ size: number }>`
   width: ${({ size }) => size}px;
   height: ${({ size }) => size}px;
   z-index: 10;
+  @media (max-width: 400px) {
+    display: none;
+  }
 `;
 
 const RotatingWrapper = styled.div<{ rotation: number }>`

@@ -24,14 +24,31 @@ const Circle = styled.div<{ size: number; color: string }>`
   font-size: 180px;
   font-weight: bold;
   z-index: 1;
+
+  @media (max-width: 400px) {
+    position: static;
+    margin-top: 20px;
+    width: auto;
+    height: auto;
+    border: none;
+
+    gap: 40px;
+    justify-content: center;
+  }
 `;
 
 const First = styled.span`
   color: #3877ee;
+  @media (max-width: 400px) {
+    font-size: 68px;
+  }
 `;
 
 const Second = styled.span`
   color: #ef5da8;
+  @media (max-width: 400px) {
+    font-size: 68px;
+  }
 `;
 
 export const TimelineCircle: React.FC<TimelineCircleProps> = ({
